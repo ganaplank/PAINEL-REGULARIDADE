@@ -9,27 +9,34 @@ const ICON_MAP = {
   FileText: FileText
 };
 
-export default function CategorySection({ category, links, onToggleFav, onEdit, onDelete }) {
+export default function CategorySection({ category, links, columnsClass, onToggleFav, onEdit, onDelete }) {
   const IconComponent = ICON_MAP[category.icon] || FileText;
 
   if (links.length === 0) return null;
 
   return (
-    <section className="category-block">
+    <section 
+      className="category-block"
+      style={{
+        '--cat-accent': category.color,
+        '--cat-bg-tint': category.bgTint,
+        '--cat-border': category.borderColor
+      }}
+    >
       <div className="category-header">
-        <div 
-          className="category-badge" 
-          style={{ backgroundColor: category.badgeBg, color: category.color }}
-        >
-          {links.length} {links.length === 1 ? 'link' : 'links'}
+        <div className="category-title-wrap">
+          <div className="category-icon-box">
+            <IconComponent size={20} />
+          </div>
+          <h2 className="category-title">{category.name}</h2>
         </div>
-        <h2 className="category-title">
-          <IconComponent size={22} color={category.color} />
-          <span>{category.name}</span>
-        </h2>
+
+        <span className="category-count-badge">
+          {links.length} {links.length === 1 ? 'item' : 'itens'}
+        </span>
       </div>
 
-      <div className="cards-grid">
+      <div className={`cards-grid ${columnsClass}`}>
         {links.map((link) => (
           <LinkCard
             key={link.id}

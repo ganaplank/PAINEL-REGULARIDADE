@@ -4,14 +4,19 @@ import CategorySection from './components/CategorySection';
 import CnpjFormatter from './components/CnpjFormatter';
 import AddEditModal from './components/AddEditModal';
 import { DEFAULT_CATEGORIES, DEFAULT_LINKS } from './data/defaultLinks';
-import { Search, Star, Layers } from 'lucide-react';
+import { Search, Star, Layers, Grid } from 'lucide-react';
 
 const STORAGE_KEY = 'central_certidoes_links_v2';
 const THEME_KEY = 'central_certidoes_theme';
+const COLS_KEY = 'central_certidoes_layout_cols';
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem(THEME_KEY) || 'light';
+  });
+
+  const [layoutCols, setLayoutCols] = useState(() => {
+    return localStorage.getItem(COLS_KEY) || '3';
   });
 
   const [linksData, setLinksData] = useState(() => {
@@ -39,7 +44,12 @@ export default function App() {
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
-  // Sync Links with LocalStorage
+  // Sync Layout Columns
+  useEffect(() => {
+    localStorage.setItem(COLS_KEY, layoutCols);
+  }, [layoutCols]);
+
+  // Sync Links
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(linksData));
   }, [linksData]);
@@ -111,7 +121,7 @@ export default function App() {
   };
 
   const handleResetLinks = () => {
-    if (window.confirm('Deseja restaurar a lista original de certidões? Suas edições personalizadas serão restauradas para o padrão.')) {
+    if (window.confirm('Deseja restaurar a lista original de certidões? Suas edições personalizadas serão restauradas.')) {
       setLinksData(DEFAULT_LINKS);
     }
   };
@@ -134,6 +144,8 @@ export default function App() {
     return acc + getFilteredLinksForCategory(cat.id).length;
   }, 0);
 
+  const columnsClass = `grid-cols-${layoutCols}`;
+
   return (
     <div className="app-main">
       <Header
@@ -144,42 +156,66 @@ export default function App() {
       />
 
       <main className="app-container">
+        {/* Toolbar & Layout Control */}
         <div className="toolbar-section">
-          <div className="search-box">
-            <Search className="search-icon" size={18} />
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Buscar por nome do serviço, órgão ou URL (ex: Receita, TST, Jucesp)..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          <div className="toolbar-row">
+            <div className="search-box">
+              <Search className="search-icon" size={18} />
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Buscar certidão ou link (ex: Receita, TST, Jucesp)..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="filter-group">
+              <button
+                className={`filter-btn ${onlyFavs ? 'active' : ''}`}
+                onClick={() => setOnlyFavs(!onlyFavs)}
+              >
+                <Star size={16} fill={onlyFavs ? 'currentColor' : 'none'} />
+                <span>Favoritos</span>
+              </button>
+
+              <button
+                className={`filter-btn ${selectedCategory === 'all' ? 'active' : ''}`}
+                onClick={() => setSelectedCategory('all')}
+              >
+                <Layers size={16} />
+                <span>Todas Categorias</span>
+              </button>
+            </div>
           </div>
 
-          <div className="filter-group">
-            <button
-              className={`filter-btn ${onlyFavs ? 'active' : ''}`}
-              onClick={() => setOnlyFavs(!onlyFavs)}
-            >
-              <Star size={16} fill={onlyFavs ? 'currentColor' : 'none'} />
-              <span>Favoritos</span>
-            </button>
-
-            <button
-              className={`filter-btn ${selectedCategory === 'all' ? 'active' : ''}`}
-              onClick={() => setSelectedCategory('all')}
-            >
-              <Layers size={16} />
-              <span>Todas as Categorias</span>
-            </button>
+          {/* Layout Column Options Control */}
+          <div className="toolbar-row" style={{ justifyContent: 'flex-end' }}>
+            <div className="layout-selector">
+              <span className="layout-label">
+                <Grid size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                Por linha:
+              </span>
+              {['auto', '1', '2', '3', '4', '5'].map((num) => (
+                <button
+                  key={num}
+                  className={`col-btn ${layoutCols === num ? 'active' : ''}`}
+                  onClick={() => setLayoutCols(num)}
+                  title={num === 'auto' ? 'Ajuste Automático Responsivo' : `${num} colunas por linha`}
+                >
+                  {num === 'auto' ? 'Auto' : num}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
+        {/* Categories rendering */}
         {totalFilteredCount === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">🔍</div>
             <h3>Nenhum registro encontrado</h3>
-            <p>Ajuste os filtros de busca para encontrar o serviço desejado.</p>
+            <p>Tente alterar os termos da sua pesquisa ou os filtros ativos.</p>
           </div>
         ) : (
           DEFAULT_CATEGORIES.map(category => {
@@ -191,6 +227,7 @@ export default function App() {
                 key={category.id}
                 category={category}
                 links={links}
+                columnsClass={columnsClass}
                 onToggleFav={handleToggleFav}
                 onEdit={handleOpenEdit}
                 onDelete={handleDelete}

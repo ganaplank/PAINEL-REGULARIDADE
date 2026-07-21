@@ -1,7 +1,34 @@
 export const DEFAULT_CATEGORIES = [
-  { id: 'fiscal', name: 'Regularidade Fiscal & Cadastral', icon: 'Building2', color: '#10b981', badgeBg: 'rgba(16, 185, 129, 0.1)' },
-  { id: 'trabalhista', name: 'Regularidade Trabalhista', icon: 'HardHat', color: '#3b82f6', badgeBg: 'rgba(59, 130, 246, 0.1)' },
-  { id: 'juridico', name: 'Justiça & Protestos', icon: 'Scale', color: '#f59e0b', badgeBg: 'rgba(245, 158, 11, 0.1)' }
+  { 
+    id: 'fiscal', 
+    name: 'Regularidade Fiscal & Cadastral', 
+    icon: 'Building2', 
+    color: '#059669', 
+    lightColor: '#10b981',
+    bgTint: 'rgba(16, 185, 129, 0.06)',
+    borderColor: 'rgba(16, 185, 129, 0.25)',
+    badgeBg: '#10b981'
+  },
+  { 
+    id: 'trabalhista', 
+    name: 'Regularidade Trabalhista', 
+    icon: 'HardHat', 
+    color: '#2563eb', 
+    lightColor: '#3b82f6',
+    bgTint: 'rgba(37, 99, 235, 0.06)',
+    borderColor: 'rgba(37, 99, 235, 0.25)',
+    badgeBg: '#3b82f6'
+  },
+  { 
+    id: 'juridico', 
+    name: 'Justiça & Protestos', 
+    icon: 'Scale', 
+    color: '#d97706', 
+    lightColor: '#f59e0b',
+    bgTint: 'rgba(245, 158, 11, 0.06)',
+    borderColor: 'rgba(245, 158, 11, 0.25)',
+    badgeBg: '#f59e0b'
+  }
 ];
 
 export const DEFAULT_LINKS = {
