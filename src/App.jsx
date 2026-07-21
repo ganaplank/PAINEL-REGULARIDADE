@@ -9,6 +9,7 @@ import { Search, Star, Layers, Grid } from 'lucide-react';
 const STORAGE_KEY = 'central_certidoes_links_v2';
 const THEME_KEY = 'central_certidoes_theme';
 const COLS_KEY = 'central_certidoes_layout_cols';
+const CAT_ORDER_KEY = 'central_certidoes_cat_order_v2';
 
 export default function App() {
   const [theme, setTheme] = useState(() => {
@@ -16,7 +17,23 @@ export default function App() {
   });
 
   const [layoutCols, setLayoutCols] = useState(() => {
-    return localStorage.getItem(COLS_KEY) || '3';
+    return localStorage.getItem(COLS_KEY) || '4';
+  });
+
+  const [categories, setCategories] = useState(() => {
+    const savedOrder = localStorage.getItem(CAT_ORDER_KEY);
+    if (savedOrder) {
+      try {
+        const savedIds = JSON.parse(savedOrder);
+        const reordered = savedIds
+          .map(id => DEFAULT_CATEGORIES.find(c => c.id === id))
+          .filter(Boolean);
+        if (reordered.length === DEFAULT_CATEGORIES.length) return reordered;
+      } catch (e) {
+        // fallback
+      }
+    }
+    return DEFAULT_CATEGORIES;
   });
 
   const [linksData, setLinksData] = useState(() => {
@@ -48,6 +65,12 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem(COLS_KEY, layoutCols);
   }, [layoutCols]);
+
+  // Sync Category Order
+  useEffect(() => {
+    const catIds = categories.map(c => c.id);
+    localStorage.setItem(CAT_ORDER_KEY, JSON.stringify(catIds));
+  }, [categories]);
 
   // Sync Links
   useEffect(() => {
@@ -121,9 +144,68 @@ export default function App() {
   };
 
   const handleResetLinks = () => {
-    if (window.confirm('Deseja restaurar a lista original de certidões? Suas edições personalizadas serão restauradas.')) {
+    if (window.confirm('Deseja restaurar a lista original de certidões e a ordem padrão das categorias?')) {
       setLinksData(DEFAULT_LINKS);
+      setCategories(DEFAULT_CATEGORIES);
     }
+  };
+
+  // Category Drag & Drop Handler
+  const handleCategoryDrop = (draggedCatId, targetCatId) => {
+    if (draggedCatId === targetCatId) return;
+
+    setCategories(prev => {
+      const draggedIdx = prev.findIndex(c => c.id === draggedCatId);
+      const targetIdx = prev.findIndex(c => c.id === targetCatId);
+      if (draggedIdx === -1 || targetIdx === -1) return prev;
+
+      const newCategories = [...prev];
+      const [removed] = newCategories.splice(draggedIdx, 1);
+      newCategories.splice(targetIdx, 0, removed);
+      return newCategories;
+    });
+  };
+
+  // Card Drag & Drop Handler (within or across categories)
+  const handleCardDrop = (linkId, sourceCatId, targetCatId, targetLinkId = null) => {
+    setLinksData(prev => {
+      const updated = { ...prev };
+      const sourceList = [...(updated[sourceCatId] || [])];
+      const cardIdx = sourceList.findIndex(item => item.id === linkId);
+      if (cardIdx === -1) return prev;
+
+      const [draggedCard] = sourceList.splice(cardIdx, 1);
+
+      if (sourceCatId === targetCatId) {
+        if (targetLinkId) {
+          const targetIdx = sourceList.findIndex(item => item.id === targetLinkId);
+          if (targetIdx !== -1) {
+            sourceList.splice(targetIdx, 0, draggedCard);
+          } else {
+            sourceList.push(draggedCard);
+          }
+        } else {
+          sourceList.push(draggedCard);
+        }
+        updated[sourceCatId] = sourceList;
+      } else {
+        updated[sourceCatId] = sourceList;
+        const targetList = [...(updated[targetCatId] || [])];
+        if (targetLinkId) {
+          const targetIdx = targetList.findIndex(item => item.id === targetLinkId);
+          if (targetIdx !== -1) {
+            targetList.splice(targetIdx, 0, draggedCard);
+          } else {
+            targetList.push(draggedCard);
+          }
+        } else {
+          targetList.push(draggedCard);
+        }
+        updated[targetCatId] = targetList;
+      }
+
+      return updated;
+    });
   };
 
   const getFilteredLinksForCategory = (catId) => {
@@ -139,7 +221,7 @@ export default function App() {
     });
   };
 
-  const totalFilteredCount = DEFAULT_CATEGORIES.reduce((acc, cat) => {
+  const totalFilteredCount = categories.reduce((acc, cat) => {
     if (selectedCategory !== 'all' && selectedCategory !== cat.id) return acc;
     return acc + getFilteredLinksForCategory(cat.id).length;
   }, 0);
@@ -201,7 +283,7 @@ export default function App() {
                   key={num}
                   className={`col-btn ${layoutCols === num ? 'active' : ''}`}
                   onClick={() => setLayoutCols(num)}
-                  title={num === 'auto' ? 'Ajuste Automático Responsivo' : `${num} colunas por linha`}
+                  title={num === 'auto' ? 'Ajuste Automático' : `${num} colunas por linha`}
                 >
                   {num === 'auto' ? 'Auto' : num}
                 </button>
@@ -218,7 +300,7 @@ export default function App() {
             <p>Tente alterar os termos da sua pesquisa ou os filtros ativos.</p>
           </div>
         ) : (
-          DEFAULT_CATEGORIES.map(category => {
+          categories.map(category => {
             if (selectedCategory !== 'all' && selectedCategory !== category.id) return null;
 
             const links = getFilteredLinksForCategory(category.id);
@@ -231,6 +313,8 @@ export default function App() {
                 onToggleFav={handleToggleFav}
                 onEdit={handleOpenEdit}
                 onDelete={handleDelete}
+                onCategoryDrop={handleCategoryDrop}
+                onCardDrop={handleCardDrop}
               />
             );
           })
@@ -244,7 +328,7 @@ export default function App() {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveLink}
         editingLink={editingLink}
-        categories={DEFAULT_CATEGORIES}
+        categories={categories}
       />
     </div>
   );
